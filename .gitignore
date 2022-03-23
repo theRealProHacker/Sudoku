@@ -1,0 +1,12 @@
+#dev
+__pycache__
+venv
+mypy.ini
+.mypy_cache
+.vscode
+
+#other
+tdoku
+tdoku_down
+sudoku
+data
