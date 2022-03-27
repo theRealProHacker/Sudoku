@@ -1,9 +1,15 @@
 from collections import deque
-from _utils import get_from_set, Surface, Optional, SysFont
 import threading
 from threading import Thread
 from pygame import time, display, gfxdraw as gfx
 from pygame.color import Color
+from pygame.font import SysFont
+from pygame.surface import Surface
+from typing import Iterable, Optional
+
+def get_from_set(s:set|Iterable):
+    for x in s:return x
+
 
 class State:
     manager: "StateManager" = NotImplemented
@@ -18,10 +24,10 @@ class State:
     def draw(self,s:Surface)->None:pass
 
 class LoadingState:
+    font = SysFont(None,26) #type: ignore
     def __init__(self):
         self.cx,self.cy = display.get_surface().get_rect().center
-        font = SysFont(None,26)
-        self.text = font.render("Loading...", True, Color("black"))
+        self.text = self.font.render("Loading...", True, Color("black"))
         self.text_rect = self.text.get_rect(center=(self.cx,self.cy-100))
         self.angle = 320
     def update(self,dt:float, _: State)->None:
@@ -39,18 +45,18 @@ class StateManager:
         def inner_func(to: str,**kwargs):
             self.set_state(to,**kwargs)
         return inner_func
-    def __init__(self,states: dict[str,State],*, start: str="", loading_state: Optional[State] = None, preload: bool = False):
+    def __init__(self,states: dict[str,State],*, start: str="", loading_state: Optional[LoadingState] = None, preload: bool = False):
         assert "" not in states, "\"\" (the empty string) cannot be name of a state"
         self.states = states
         self.loading_state = loading_state or LoadingState()
         self.inited = {k:False for k in self.states.keys()}
         self.loading = {k:False for k in self.states.keys()}
-        self.threads: dict[Thread] = {}
-        for state in states.values(): # tell states to which manager they belong
+        self.threads: dict[str,Thread] = {}
+        for name, state in states.items(): # tell states to which manager they belong
             state.exit = self._state_exit() #type: ignore
             state.manager = self
             if preload:
-                self._init_state(state)
+                self._init_state(name)
         if len(self.states) == 1:
             print("Why would you only have one state? It has one upside, we automatically started the StateManager for you. ")
             start = get_from_set(self.states)
@@ -79,7 +85,7 @@ class StateManager:
                 self.current_state().update(dt)
             else:
                 if self.loading_state is not None:
-                    self.loading_state.update(dt, self._current_state)
+                    self.loading_state.update(dt, self.current_state())
     def draw(self, s: Surface)->None:
         """ Draw the state manager to the given Surface """
         if not self._current_state:
@@ -154,7 +160,7 @@ class StackStateManager():
         self.inited = {k:False for k in self.states.keys()}
         for state in states.values(): # tell states to which manager they belong
             state.exit = self._state_exit() #type: ignore
-            state.manager = self
+            state.manager = self # type: ignore
         if len(self.states) == 1:
             print("Why do you only have one state? It has one upside, we automatically started the StateManager for you. ")
             self.start(get_from_set(self.states))
