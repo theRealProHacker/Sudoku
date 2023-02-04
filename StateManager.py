@@ -14,7 +14,7 @@ def get_from_set(s:set|Iterable):
 class State:
     manager: "StateManager" = NotImplemented
     @staticmethod
-    def exit(to: "State", **kwargs)->None:
+    def exit(to: str, **kwargs)->None:
         """ Call this function to exit the current state to another state """
         raise NotImplementedError("Use a state only with a state manager")
     def on_init(self)->None:pass
@@ -24,8 +24,8 @@ class State:
     def draw(self,s:Surface)->None:pass
 
 class LoadingState:
-    font = SysFont(None,26) #type: ignore
     def __init__(self):
+        self.font = SysFont(None,26) #type: ignore
         self.cx,self.cy = display.get_surface().get_rect().center
         self.text = self.font.render("Loading...", True, Color("black"))
         self.text_rect = self.text.get_rect(center=(self.cx,self.cy-100))
